@@ -680,3 +680,7 @@ should_run <- interactive() || grepl("Rscript", paste(commandArgs(), collapse = 
 if (should_run) {
   runApp(app)
 }
+
+# When this file is sourced by a hosting service it should return the
+# shiny.appobj; having `app` as the final expression ensures that.
+app
