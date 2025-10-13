@@ -66,7 +66,7 @@ $(document).on("blur", "input[id^=\'ai_date_\']", function() {
 
 ui <- fluidPage(
   titlePanel("AI usage reporting framework"),
-  h1("[acronym]]"),
+  h1("[acronym]"),
   # Clear all inputs button
   tags$div(
     style = "margin-bottom: 10px;",
