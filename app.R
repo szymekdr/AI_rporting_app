@@ -65,8 +65,8 @@ $(document).on("blur", "input[id^=\'ai_date_\']", function() {
 '
 
 ui <- fluidPage(
-  titlePanel("AI usage reporting framework"),
-  h1("[acronym]"),
+  titlePanel("AI usage reporting framework: AI disclosure for Improved Transparency"),
+  h1("AIdIT"),
   # Clear all inputs button
   tags$div(
     style = "margin-bottom: 10px;",
@@ -122,7 +122,27 @@ ui <- fluidPage(
         value = FALSE
       ),
       hr(),
-      h4("Listing of AI engines used in the paper:"),
+  # --- New disclosure questions (placed above AI engines listing)
+  h4("Additional AI disclosure questions"),
+  radioButtons("supervised_verified",
+       label = "1) Selection (yes/no/no intentional use of AI): Have you supervised the AI model and verified its outputs to avoid errors, halucinations and related issues?",
+       choices = c("Yes" = "yes", "No" = "no", "No intentional use of AI" = "no_intent"),
+       selected = NULL),
+  radioButtons("ethics_compliance",
+       label = "2) Have you checked the compliance of your AI usage with ethical guidelines of your institution, the funding agency and any other related entity?",
+       choices = c("Yes" = "yes", "No" = "no"),
+       selected = NULL),
+  radioButtons("prompts_archived",
+       label = "3) Have you archived and made available the representative prompts used in generating the AI content?",
+       choices = c("Yes, in the Supplementary Materials" = "supplementary",
+           "Yes, available upon request" = "upon_request",
+           "No" = "no"),
+       selected = NULL),
+  textAreaInput("other_comments",
+        label = "4) Any other comments (these will be added verbatim to the generated text)",
+        value = "", rows = 3),
+  br(),
+  h4("Listing of AI engines used in the paper:"),
       # let user choose how many models to enter (default 1)
       numericInput("num_models", "No. of AI models used",
         value = 1, min = 1, max = 10, step = 1, width = "150px"
@@ -301,11 +321,49 @@ server <- function(input, output, session) {
 
     model_metas <- vapply(rows, function(r) r$meta, FUN.VALUE = "")
 
-    # final composed text
-    if (nzchar(per_model_usage_str)) {
+    # base composed text
+    base_text <- if (nzchar(per_model_usage_str)) {
       paste0("We used the following AI engines in the present study: ", paste(model_metas, collapse = "; "), ". Area(s) of generative AI usage: ", per_model_usage_str, ".")
     } else {
       paste0("We used the following AI engines in the present study: ", paste(model_metas, collapse = "; "), ". Area(s) of generative AI usage: ", opts_str, ".")
+    }
+
+    # Add-on sentences based on the new questions
+    addons <- character(0)
+
+    # Q1: supervised_verified
+    sv <- input$supervised_verified
+    if (!is.null(sv) && sv == "yes") {
+      addons <- c(addons, "The authors declare that they have verified and approved all content generated or modified by the AI tools used.")
+    } else if (!is.null(sv) && sv == "no_intent") {
+      addons <- c(addons, "Any AI‑driven tools embedded by default or running unseen in the software used were unavoidable; the authors accept no liability for their presence.")
+    }
+
+    # Q2: ethics_compliance
+    ec <- input$ethics_compliance
+    if (!is.null(ec) && ec == "yes") {
+      addons <- c(addons, "The use of AI in this paper was in compliance with the ethical regulations of all funders and host institutions.")
+    }
+
+    # Q3: prompts_archived
+    pa <- input$prompts_archived
+    if (!is.null(pa) && pa == "supplementary") {
+      addons <- c(addons, "Representative prompts used in AI content generation are available in the Supplementary Materials.")
+    } else if (!is.null(pa) && pa == "upon_request") {
+      addons <- c(addons, "Representative prompts used in AI content generation are available upon request.")
+    }
+
+    # Q4: other_comments (free text, add verbatim if non-empty)
+    oc <- input$other_comments
+    if (!is.null(oc) && nzchar(trimws(oc))) {
+      addons <- c(addons, trimws(oc))
+    }
+
+    # Combine base text and add-ons
+    if (length(addons) > 0) {
+      paste(c(base_text, addons), collapse = " ")
+    } else {
+      base_text
     }
   }
 
@@ -509,6 +567,11 @@ server <- function(input, output, session) {
     updateNumericInput(session, "num_models", value = 1)
     # reset negative checkbox
     updateCheckboxInput(session, "negative", value = FALSE)
+  # reset new disclosure fields
+  updateRadioButtons(session, "supervised_verified", selected = character(0))
+  updateRadioButtons(session, "ethics_compliance", selected = character(0))
+  updateRadioButtons(session, "prompts_archived", selected = character(0))
+  updateTextAreaInput(session, "other_comments", value = "")
     # reset checkbox groups
     updateCheckboxGroupInput(session, "group1", selected = character(0))
     updateCheckboxGroupInput(session, "group2", selected = character(0))
@@ -548,6 +611,11 @@ server <- function(input, output, session) {
       xml2::xml_set_attr(doc, "generated_at", as.character(Sys.time()))
       # negative
       xml2::xml_add_child(doc, "negative", as.character(isTRUE(input$negative)))
+  # new disclosure questions
+  xml2::xml_add_child(doc, "supervised_verified", ifelse(is.null(input$supervised_verified), "", input$supervised_verified))
+  xml2::xml_add_child(doc, "ethics_compliance", ifelse(is.null(input$ethics_compliance), "", input$ethics_compliance))
+  xml2::xml_add_child(doc, "prompts_archived", ifelse(is.null(input$prompts_archived), "", input$prompts_archived))
+  xml2::xml_add_child(doc, "other_comments", ifelse(is.null(input$other_comments), "", input$other_comments))
       # num models
       xml2::xml_add_child(doc, "num_models", as.character(input$num_models))
       # ai models
@@ -621,6 +689,15 @@ server <- function(input, output, session) {
     # negative
     neg <- xml2::xml_text(xml2::xml_find_first(doc, ".//negative"))
     xml_data$negative <- identical(tolower(neg), "true") || identical(neg, "1")
+  # new disclosure questions
+  sv <- xml2::xml_text(xml2::xml_find_first(doc, ".//supervised_verified"))
+  xml_data$supervised_verified <- if (nzchar(sv)) sv else NULL
+  ec <- xml2::xml_text(xml2::xml_find_first(doc, ".//ethics_compliance"))
+  xml_data$ethics_compliance <- if (nzchar(ec)) ec else NULL
+  pa <- xml2::xml_text(xml2::xml_find_first(doc, ".//prompts_archived"))
+  xml_data$prompts_archived <- if (nzchar(pa)) pa else NULL
+  oc <- xml2::xml_text(xml2::xml_find_first(doc, ".//other_comments"))
+  xml_data$other_comments <- if (nzchar(oc)) oc else NULL
     
     # num_models
     nm <- xml2::xml_text(xml2::xml_find_first(doc, ".//num_models"))
@@ -664,6 +741,11 @@ server <- function(input, output, session) {
     
     # Update negative checkbox immediately
     updateCheckboxInput(session, "negative", value = xml_data$negative)
+  # Update new disclosure fields (these will be applied when UI is ready)
+  if (!is.null(xml_data$supervised_verified)) updateRadioButtons(session, "supervised_verified", selected = xml_data$supervised_verified)
+  if (!is.null(xml_data$ethics_compliance)) updateRadioButtons(session, "ethics_compliance", selected = xml_data$ethics_compliance)
+  if (!is.null(xml_data$prompts_archived)) updateRadioButtons(session, "prompts_archived", selected = xml_data$prompts_archived)
+  if (!is.null(xml_data$other_comments)) updateTextAreaInput(session, "other_comments", value = xml_data$other_comments)
     
     # Update num_models (this will trigger UI re-render)
     updateNumericInput(session, "num_models", value = xml_data$num_models)
@@ -680,6 +762,7 @@ should_run <- interactive() || grepl("Rscript", paste(commandArgs(), collapse = 
 if (should_run) {
   runApp(app)
 }
+
 
 # When this file is sourced by a hosting service it should return the
 # shiny.appobj; having `app` as the final expression ensures that.
