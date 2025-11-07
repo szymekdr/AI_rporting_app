@@ -117,7 +117,7 @@ ui <- fluidPage(
   Skorb K, Oles W, Gronowska M, Bikmurzina F, Boron N, Zagalska-Neubauer M, Lagisz M, Nakagawa S. 2025. Unifying
   framework for reporting of Artificial Intelligence use in research: the AI disclosure for Improved
   Transparency (AIdIT). <i>In preparation</i>."),
-  style = "max-width: 900px; font-size: 85%;"),
+  style = "max-width: 750px; font-size: 85%;"),
 
   hr(),
 
@@ -142,7 +142,7 @@ ui <- fluidPage(
       ),
       hr(),
       # --- New disclosure questions (placed above AI engines listing)
-      h4("1B: Listing of AI engines used in the paper:"),
+      h4("1B: Listing of AI engines used in the paper"),
       # let user choose how many models to enter (default 1)
       numericInput("num_models", "No. of AI models used",
         value = 1, min = 1, max = 10, step = 1, width = "150px"
