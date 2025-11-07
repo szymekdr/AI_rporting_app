@@ -113,6 +113,12 @@ ui <- fluidPage(
   all inputs'</i> button to reset the form.<br><br>"),
   style = "max-width: 900px;"),
 
+  p(HTML("<b>Citation:</b> Drobniak SM, Rutkowska J, Arct A, Cendrowska M, Gudowska A, Janas K, Podkowa P,
+  Skorb K, Oles W, Gronowska M, Bikmurzina F, Boron N, Zagalska-Neubauer M, Lagisz M, Nakagawa S. 2025. Unifying
+  framework for reporting of Artificial Intelligence use in research: the AI disclosure for Improved
+  Transparency (AIdIT). <i>In preparation</i>."),
+  style = "max-width: 900px;"),
+
   hr(),
 
   # Clear all inputs button
