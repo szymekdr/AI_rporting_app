@@ -117,7 +117,7 @@ ui <- fluidPage(
   Skorb K, Oles W, Gronowska M, Bikmurzina F, Boron N, Zagalska-Neubauer M, Lagisz M, Nakagawa S. 2025. Unifying
   framework for reporting of Artificial Intelligence use in research: the AI disclosure for Improved
   Transparency (AIdIT). <i>In preparation</i>."),
-  style = "max-width: 900px;"),
+  style = "max-width: 900px; font-size: 80%;"),
 
   hr(),
 
